@@ -320,6 +320,8 @@ body,
   border-radius: 6px;
   background: var(--cf-success-subtle);
   border: 1px solid var(--cf-success);
+  position: relative;
+  z-index: 20;
 }
 
 .upload-success-header {
@@ -794,6 +796,24 @@ body,
   flex-direction: column;
   gap: 4px;
   margin-top: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+  /* Space for scrollbar */
+}
+
+/* Custom Scrollbar for node list */
+.manual-nodes-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.manual-nodes-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.manual-nodes-list::-webkit-scrollbar-thumb {
+  background: var(--cf-border);
+  border-radius: 4px;
 }
 
 .manual-node-item {

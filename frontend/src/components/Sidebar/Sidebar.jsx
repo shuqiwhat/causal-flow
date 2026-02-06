@@ -398,53 +398,58 @@ function Sidebar() {
                                             onDrop={handleDrop}
                                             onClick={() => document.getElementById('csv-input').click()}
                                         >
+                                            <div className="upload-zone-icon">
+                                                <Icons.Upload />
+                                            </div>
+                                            <div className="upload-zone-text">
+                                                Drop CSV file here
+                                                <br />
+                                                or click to browse
+                                            </div>
                                             <input
                                                 id="csv-input"
                                                 type="file"
                                                 accept=".csv"
-                                                style={{ display: 'none' }}
+                                                className="hidden"
                                                 onChange={handleFileChange}
                                             />
-                                            <Icons.Upload />
-                                            <div className="upload-zone-text">Drop CSV file here</div>
-                                            <div className="upload-zone-hint">or click to browse</div>
                                         </div>
-
-                                        <div className="or-divider">
-                                            <span>or build manually</span>
-                                        </div>
-
-                                        {/* 始终显示 Add Node 按钮 */}
-                                        <button
-                                            className="action-btn action-btn--ghost"
-                                            onClick={() => setShowAddNode(true)}
-                                        >
-                                            <Icons.Plus />
-                                            Add Node
-                                        </button>
-
-                                        {/* 显示已添加的手工节点列表 */}
-                                        {hasNodes && (
-                                            <div className="manual-nodes-list">
-                                                {nodes.filter(n => n.data?.isManual).map(node => (
-                                                    <div key={node.id} className="manual-node-item">
-                                                        <span className="manual-node-name">
-                                                            Node: {node.data?.label || node.id}
-                                                        </span>
-                                                        <button
-                                                            className="manual-node-remove"
-                                                            onClick={() => removeNode(node.id)}
-                                                            title="Remove node"
-                                                        >
-                                                            ×
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
                                     </>
                                 )}
 
+                                {/* Divider */}
+                                <div className="or-divider">
+                                    <span>{metadata ? 'and' : 'or'} build manually</span>
+                                </div>
+
+                                {/* Add Node Button - Always Visible */}
+                                <button
+                                    className="action-btn action-btn--ghost"
+                                    onClick={() => setShowAddNode(true)}
+                                >
+                                    <Icons.Plus />
+                                    Add Node
+                                </button>
+
+                                {/* List of All Nodes (Renamed for clarity: Manual & Imported) */}
+                                {nodes.length > 0 && (
+                                    <div className="manual-nodes-list">
+                                        {nodes.map(node => (
+                                            <div key={node.id} className="manual-node-item">
+                                                <span className="manual-node-name">
+                                                    Node: {node.data?.label || node.id}
+                                                </span>
+                                                <button
+                                                    className="manual-node-remove"
+                                                    onClick={() => removeNode(node.id)}
+                                                    title="Remove node"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                 {error && <div className="upload-error">{error}</div>}
                             </>
                         )}
