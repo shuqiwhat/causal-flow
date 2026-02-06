@@ -1,8 +1,22 @@
 # Python 依赖包列表
+
+# === Web框架 ===
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
-pandas>=2.0.0
 python-multipart>=0.0.6
 pydantic>=2.0.0
-pgmpy>=0.1.25
+
+# === 数据处理 ===
+pandas>=2.0.0
+numpy>=1.24.0
 networkx>=3.0
+
+# === PyTorch CPU版本（Render没有GPU，不需要CUDA）===
+# 从PyTorch官方CPU专用源安装，避免下载3.5GB的GPU版本
+# CPU版torch只有约200MB，比GPU版的900MB+小很多
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+
+# === 贝叶斯网络 ===
+pgmpy>=0.1.25
+scikit-learn>=1.0.0
