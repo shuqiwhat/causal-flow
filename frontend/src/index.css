@@ -690,7 +690,8 @@ body,
 }
 
 .action-btn--ghost {
-  background: transparent;
+  background: var(--cf-bg-primary);
+  /* Ensure opaque to hide sidebar line */
   border-color: transparent;
   color: var(--cf-text-tertiary);
 }
