@@ -1,0 +1,958 @@
+@import "tailwindcss";
+@import '@xyflow/react/dist/style.css';
+
+/* ============================================
+   CausalFlow Design System
+   Linear-style, High Signal-to-Noise Ratio
+   ============================================ */
+
+:root {
+  /* Neutral palette - 极简灰阶 */
+  --cf-bg-primary: #fafafa;
+  --cf-bg-secondary: #ffffff;
+  --cf-border: #e5e5e5;
+  --cf-border-subtle: #f0f0f0;
+
+  /* Text hierarchy */
+  --cf-text-primary: #171717;
+  --cf-text-secondary: #525252;
+  --cf-text-tertiary: #a3a3a3;
+
+  /* Accent - 只在 Active 状态使用 */
+  --cf-accent: #2563eb;
+  --cf-accent-subtle: #eff6ff;
+
+  /* Status */
+  --cf-success: #16a34a;
+  --cf-success-subtle: #f0fdf4;
+  --cf-error: #dc2626;
+  --cf-error-subtle: #fef2f2;
+
+  /* Typography */
+  --cf-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --cf-font-mono: "SF Mono", "Fira Code", monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  font-family: var(--cf-font);
+  background: var(--cf-bg-primary);
+  color: var(--cf-text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================
+   Layout - Chromeless Design
+   ============================================ */
+
+.app-layout {
+  display: flex;
+  height: 100vh;
+  background: var(--cf-bg-primary);
+}
+
+/* ============================================
+   Sidebar - Workflow Pipeline
+   ============================================ */
+
+.sidebar {
+  width: var(--sidebar-width, 260px);
+  min-width: 200px;
+  max-width: 400px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--cf-border);
+  background: var(--cf-bg-primary);
+  position: relative;
+  z-index: 1000;
+  /* 确保 sidebar 在所有 React Flow 图层之上 */
+}
+
+/* Resize Handle */
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 100;
+  transition: background 0.15s ease;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle.dragging {
+  background: var(--cf-accent);
+  opacity: 0.5;
+}
+
+/* Header - Context */
+.sidebar-header {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--cf-border-subtle);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-logo-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--cf-text-primary);
+}
+
+.sidebar-logo-text {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--cf-text-primary);
+}
+
+.sidebar-project {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--cf-text-tertiary);
+}
+
+/* Pipeline - Core */
+.sidebar-pipeline {
+  flex: 1;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pipeline-section {
+  position: relative;
+}
+
+/* 流程连接线 */
+.pipeline-section::before {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 40px;
+  bottom: 0;
+  width: 1px;
+  background: var(--cf-border);
+  z-index: 0;
+}
+
+.pipeline-section:last-child::before {
+  display: none;
+}
+
+.pipeline-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  color: var(--cf-text-secondary);
+  background: transparent;
+}
+
+.pipeline-item:hover {
+  background: var(--cf-border-subtle);
+}
+
+.pipeline-item.active {
+  background: var(--cf-accent-subtle);
+  color: var(--cf-accent);
+}
+
+.pipeline-item-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.pipeline-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pipeline-item-title {
+  font-weight: 500;
+}
+
+.pipeline-item-subtitle {
+  font-size: 11px;
+  color: var(--cf-text-tertiary);
+  margin-top: 1px;
+}
+
+.pipeline-item.active .pipeline-item-subtitle {
+  color: var(--cf-accent);
+  opacity: 0.7;
+}
+
+.pipeline-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: var(--cf-success-subtle);
+  color: var(--cf-success);
+  font-weight: 500;
+}
+
+/* Utility - Bottom */
+.sidebar-utility {
+  padding: 12px 8px;
+  border-top: 1px solid var(--cf-border-subtle);
+}
+
+.utility-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--cf-text-tertiary);
+  transition: all 0.15s ease;
+}
+
+.utility-item:hover {
+  background: var(--cf-border-subtle);
+  color: var(--cf-text-secondary);
+}
+
+.utility-item-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* ============================================
+   Upload Panel - Inline in Pipeline
+   ============================================ */
+
+.upload-zone {
+  margin: 8px 0;
+  padding: 16px;
+  border: 1px dashed var(--cf-border);
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--cf-bg-primary);
+  /* 确保不透明 */
+  position: relative;
+  z-index: 20;
+}
+
+.upload-zone:hover {
+  border-color: var(--cf-text-tertiary);
+  background: var(--cf-bg-secondary);
+}
+
+.upload-zone.dragging {
+  border-color: var(--cf-accent);
+  background: var(--cf-accent-subtle);
+}
+
+.upload-zone-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--cf-text-tertiary);
+  margin: 0 auto 8px;
+}
+
+.upload-zone-text {
+  font-size: 12px;
+  color: var(--cf-text-secondary);
+}
+
+.upload-zone-hint {
+  font-size: 11px;
+  color: var(--cf-text-tertiary);
+  margin-top: 4px;
+}
+
+/* Upload States */
+.upload-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--cf-text-tertiary);
+}
+
+.upload-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--cf-border);
+  border-top-color: var(--cf-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.upload-success {
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--cf-success-subtle);
+  border: 1px solid var(--cf-success);
+}
+
+.upload-success-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cf-success);
+}
+
+.upload-success-meta {
+  font-size: 11px;
+  color: var(--cf-text-tertiary);
+  margin-top: 4px;
+}
+
+.upload-success-clear {
+  font-size: 11px;
+  color: var(--cf-error);
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.upload-success-clear:hover {
+  text-decoration: underline;
+}
+
+.upload-error {
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--cf-error-subtle);
+  border: 1px solid var(--cf-error);
+  font-size: 12px;
+  color: var(--cf-error);
+}
+
+/* ============================================
+   Canvas - React Flow
+   ============================================ */
+
+.canvas-container {
+  flex: 1;
+  position: relative;
+  background: var(--cf-bg-primary);
+}
+
+/* Override React Flow styles */
+.react-flow__background {
+  background: var(--cf-bg-primary) !important;
+}
+
+.react-flow__background pattern line {
+  stroke: var(--cf-border-subtle) !important;
+}
+
+.react-flow__controls {
+  box-shadow: none !important;
+  border: 1px solid var(--cf-border) !important;
+  border-radius: 6px !important;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: var(--cf-bg-secondary) !important;
+  border-bottom: 1px solid var(--cf-border) !important;
+  color: var(--cf-text-secondary) !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--cf-border-subtle) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__minimap {
+  border: 1px solid var(--cf-border) !important;
+  border-radius: 6px !important;
+  background: var(--cf-bg-secondary) !important;
+}
+
+/* ============================================
+   Custom Node - Minimal Design
+   ============================================ */
+
+.cf-node {
+  background: var(--cf-bg-secondary);
+  border: 1px solid var(--cf-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  min-width: 120px;
+  transition: all 0.15s ease;
+}
+
+.cf-node:hover {
+  border-color: var(--cf-text-tertiary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.cf-node.selected {
+  border-color: var(--cf-accent);
+  box-shadow: 0 0 0 2px var(--cf-accent-subtle);
+}
+
+.cf-node-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cf-text-primary);
+  text-align: center;
+}
+
+.cf-node-meta {
+  font-size: 11px;
+  color: var(--cf-text-tertiary);
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* ============================================
+   Phase 3: Run Mode Node Styles
+   ============================================ */
+
+.cf-node.run-mode {
+  min-width: 160px;
+  padding: 10px 12px;
+}
+
+.cf-node.evidence {
+  border-color: var(--cf-error);
+  background: var(--cf-error-subtle);
+}
+
+.cf-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.cf-node-evidence-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  background: var(--cf-error);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.cf-node-states {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cf-state-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--cf-bg-primary);
+  border: 1px solid transparent;
+}
+
+.cf-state-row:hover {
+  background: var(--cf-border-subtle);
+}
+
+.cf-state-row.active {
+  background: var(--cf-error-subtle);
+  border-color: var(--cf-error);
+}
+
+.cf-state-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--cf-text-secondary);
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.cf-state-bar-container {
+  flex: 1;
+  height: 8px;
+  background: var(--cf-border-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cf-state-bar {
+  height: 100%;
+  background: var(--cf-accent);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.cf-state-row.active .cf-state-bar {
+  background: var(--cf-error);
+}
+
+/* 后验分布节点 - 受证据影响的更新概率 */
+.cf-node.posterior .cf-state-bar {
+  background: #10b981;
+  /* 绿色 - posterior */
+}
+
+/* 证据节点优先级更高 */
+.cf-node.evidence .cf-state-bar {
+  background: var(--cf-border);
+}
+
+.cf-node.evidence .cf-state-row.active .cf-state-bar {
+  background: var(--cf-error);
+}
+
+.cf-state-prob {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--cf-text-tertiary);
+  min-width: 32px;
+  text-align: right;
+}
+
+/* React Flow Handles */
+.react-flow__handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: var(--cf-bg-secondary) !important;
+  border: 1.5px solid var(--cf-border) !important;
+}
+
+.react-flow__handle:hover {
+  border-color: var(--cf-accent) !important;
+  background: var(--cf-accent-subtle) !important;
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.empty-state-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--cf-border);
+  margin-bottom: 16px;
+}
+
+.empty-state-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cf-text-tertiary);
+}
+
+.empty-state-subtitle {
+  font-size: 12px;
+  color: var(--cf-text-tertiary);
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+/* ============================================
+   CSS Variables for colors
+   ============================================ */
+
+:root {
+  --color-border: var(--cf-border);
+  --color-border-strong: var(--cf-text-tertiary);
+  --color-text-muted: var(--cf-text-tertiary);
+  --color-accent: var(--cf-accent);
+}
+
+/* ============================================
+   Structure Actions - Phase 2
+   ============================================ */
+
+.structure-actions {
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 6px;
+  background: var(--cf-bg-secondary);
+  border: 1px solid var(--cf-border-subtle);
+  position: relative;
+  z-index: 1;
+}
+
+.structure-info {
+  font-size: 11px;
+  color: var(--cf-text-tertiary);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--cf-border-subtle);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  /* 防止被 sidebar 边框遮挡 */
+  z-index: 20;
+  /* 提高层级 */
+  background: var(--cf-bg-primary);
+  /* 确保不透明 */
+  color: var(--cf-text-secondary);
+}
+
+.action-btn:first-of-type {
+  margin-top: 0;
+}
+
+.action-btn:hover:not(:disabled) {
+  border-color: var(--cf-text-tertiary);
+  background: var(--cf-border-subtle);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn--primary {
+  background: var(--cf-accent-subtle);
+  color: var(--cf-accent);
+  border-color: var(--cf-accent);
+}
+
+.action-btn--primary:hover:not(:disabled) {
+  background: var(--cf-accent);
+  color: white;
+}
+
+.action-btn--success {
+  background: var(--cf-success-subtle);
+  color: var(--cf-success);
+  border-color: var(--cf-success);
+}
+
+.action-btn--success:hover:not(:disabled) {
+  background: var(--cf-success);
+  color: white;
+}
+
+.action-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--cf-text-tertiary);
+}
+
+.action-btn--ghost:hover:not(:disabled) {
+  background: var(--cf-border-subtle);
+  color: var(--cf-text-secondary);
+}
+
+.action-btn-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* ============================================
+   Status Badges - Canvas Overlay
+   ============================================ */
+
+.status-badge {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 10;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.status-badge--success {
+  background: var(--cf-success-subtle);
+  color: var(--cf-success);
+  border: 1px solid var(--cf-success);
+}
+
+.status-badge--error {
+  background: var(--cf-error-subtle);
+  color: var(--cf-error);
+  border: 1px solid var(--cf-error);
+}
+
+/* ============================================
+   Or Divider
+   ============================================ */
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  margin: 12px 0;
+  font-size: 11px;
+  color: var(--cf-text-tertiary);
+}
+
+.or-divider::before,
+.or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--cf-border-subtle);
+}
+
+.or-divider span {
+  padding: 0 10px;
+}
+
+/* ============================================
+   Manual Nodes Info
+   ============================================ */
+
+.manual-nodes-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--cf-text-tertiary);
+  background: var(--cf-bg-secondary);
+  border: 1px solid var(--cf-border-subtle);
+  border-radius: 6px;
+}
+
+/* Manual Node List */
+.manual-nodes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.manual-node-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--cf-bg-secondary);
+  border: 1px solid var(--cf-border-subtle);
+  border-radius: 6px;
+  font-size: 12px;
+  position: relative;
+  z-index: 20;
+}
+
+.manual-node-name {
+  color: var(--cf-text-secondary);
+  font-weight: 500;
+}
+
+.manual-node-remove {
+  background: none;
+  border: none;
+  color: var(--cf-text-tertiary);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  position: relative;
+  z-index: 20;
+}
+
+.manual-node-remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--cf-error);
+}
+
+.add-more-btn {
+  background: none;
+  border: none;
+  color: var(--cf-accent);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.add-more-btn:hover {
+  background: var(--cf-accent-subtle);
+}
+
+/* ============================================
+   Modal Styles
+   ============================================ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.15s ease;
+}
+
+.modal-content {
+  background: var(--cf-bg-secondary);
+  border: 1px solid var(--cf-border);
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 320px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cf-text-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--cf-text-tertiary);
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.modal-close:hover {
+  background: var(--cf-border-subtle);
+  color: var(--cf-text-primary);
+}
+
+.modal-field {
+  margin-bottom: 16px;
+}
+
+.modal-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cf-text-secondary);
+  margin-bottom: 6px;
+}
+
+.modal-field input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  border: 1px solid var(--cf-border);
+  border-radius: 6px;
+  background: var(--cf-bg-primary);
+  color: var(--cf-text-primary);
+  transition: border-color 0.15s ease;
+}
+
+.modal-field input:focus {
+  outline: none;
+  border-color: var(--cf-accent);
+  box-shadow: 0 0 0 2px var(--cf-accent-subtle);
+}
+
+.modal-field input::placeholder {
+  color: var(--cf-text-tertiary);
+}
+
+.modal-error {
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--cf-error);
+  background: var(--cf-error-subtle);
+  border-radius: 6px;
+}
+
+.modal-submit {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+  background: var(--cf-accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modal-submit:hover {
+  background: #1d4ed8;
+}
