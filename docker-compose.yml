@@ -1,1 +1,19 @@
-# Docker Compose 配置 - 等待添加
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # 如果部署在本地，使用 http://localhost:8000/api
+        # 如果部署在 VPS，使用 http://YOUR_VPS_IP:8000/api
+        VITE_API_URL: http://localhost:8000/api
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
