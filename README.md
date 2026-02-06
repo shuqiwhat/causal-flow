@@ -11,9 +11,8 @@
 
 <p align="center">
   <a href="https://bn-causal-flow.vercel.app">Live Demo</a> ·
-  <a href="https://docs.google.com">Docs</a> ·
-  <a href="#quick-start">Quick Start</a> ·
-  <a href="https://discord.gg">Discord</a>
+  <a href="https://www.shuqihere.top/archive/open-source/bn-causal-flow">Docs</a> ·
+  <a href="#quick-start">Quick Start</a>
 </p>
 
 <p align="center">
