@@ -206,7 +206,19 @@ const useFlowStore = create((set, get) => ({
             name: n.id,
             states: n.data?.states || [],
             prior: n.data?.prior || null,
+            cpt: n.data?.cpt || null,
         }));
+    },
+
+    // 更新节点的 CPT（条件概率表）
+    updateNodeCpt: (nodeId, cpt) => {
+        const nodes = get().nodes.map(n => {
+            if (n.id === nodeId) {
+                return { ...n, data: { ...n.data, cpt } };
+            }
+            return n;
+        });
+        set({ nodes, modelTrained: false });
     },
 
     // 判断是否有手动节点

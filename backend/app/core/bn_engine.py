@@ -214,10 +214,14 @@ class BNEngine:
         从用户定义的先验概率构建贝叶斯网络（不需要数据）。
         
         对于根节点（无父节点）：使用用户提供的 prior，未提供则均匀分布。
-        对于子节点（有父节点）：如果没有数据，构建均匀条件分布。
+        对于子节点（有父节点）：
+          - 如果提供了 cpt（条件概率表），直接使用；
+          - 否则，根据父节点 prior 和自身 prior 生成有因果效应的默认 CPT，
+            使得父节点状态对子节点概率有可见影响。
         
         Args:
-            nodes_def: [{"name": "X", "states": ["A","B"], "prior": {"A": 0.6, "B": 0.4}}, ...]
+            nodes_def: [{"name": "X", "states": ["A","B"], "prior": {"A": 0.6, "B": 0.4},
+                         "cpt": {"parent_combo_key": {"state": prob, ...}, ...}}, ...]
             edges: [(parent, child), ...]
         
         Returns:
@@ -244,6 +248,7 @@ class BNEngine:
             node_name = nd["name"]
             states = nd["states"]
             prior = nd.get("prior")
+            cpt = nd.get("cpt")  # 用户手动编辑的条件概率表
             
             # 获取父节点
             parents = list(self.model.get_parents(node_name))
@@ -252,7 +257,6 @@ class BNEngine:
                 # 根节点：使用用户 prior 或均匀分布
                 if prior and len(prior) == len(states):
                     values = [prior.get(s, 1.0 / len(states)) for s in states]
-                    # 归一化
                     total = sum(values)
                     values = [v / total for v in values]
                 else:
@@ -278,20 +282,17 @@ class BNEngine:
                 for c in parent_cards:
                     num_parent_combos *= c
                 
-                # 如果子节点有 prior，用 prior 作为每种父节点组合下的分布
-                # 否则用均匀分布
-                if prior and len(prior) == len(states):
-                    base_values = [prior.get(s, 1.0 / len(states)) for s in states]
-                    total = sum(base_values)
-                    base_values = [v / total for v in base_values]
+                if cpt:
+                    # 用户提供了完整的 CPT —— 直接使用
+                    values = self._parse_user_cpt(
+                        cpt, states, parents, parent_cards, parent_state_names
+                    )
                 else:
-                    base_values = [1.0 / len(states)] * len(states)
-                
-                # 每一行是一个 state，每一列是一种父节点组合
-                values = [
-                    [base_values[i]] * num_parent_combos 
-                    for i in range(len(states))
-                ]
+                    # 没有用户 CPT —— 生成有因果效应的默认 CPT
+                    values = self._generate_causal_cpt(
+                        states, parents, parent_cards, parent_state_names,
+                        node_states, prior
+                    )
                 
                 state_names = {node_name: states, **parent_state_names}
                 
@@ -317,6 +318,113 @@ class BNEngine:
             "nodes": len(self.model.nodes()),
             "edges": len(self.model.edges()),
         }
+    
+    def _parse_user_cpt(
+        self,
+        cpt: Dict,
+        states: List[str],
+        parents: List[str],
+        parent_cards: List[int],
+        parent_state_names: Dict[str, List[str]]
+    ) -> List[List[float]]:
+        """
+        解析用户手动编辑的 CPT。
+        
+        cpt 格式: { "parent1_state,parent2_state": {"child_state": prob, ...}, ... }
+        
+        返回 pgmpy 格式的 values: [[row0_col0, row0_col1, ...], [row1_col0, ...], ...]
+        """
+        import itertools
+        
+        # 生成父节点组合（按 pgmpy 的列顺序）
+        parent_state_lists = [parent_state_names[p] for p in parents]
+        combos = list(itertools.product(*parent_state_lists))
+        
+        num_states = len(states)
+        num_combos = len(combos)
+        values = [[0.0] * num_combos for _ in range(num_states)]
+        
+        for col_idx, combo in enumerate(combos):
+            combo_key = ",".join(str(s) for s in combo)
+            if combo_key in cpt:
+                col_dist = cpt[combo_key]
+                col_values = [col_dist.get(s, 1.0 / num_states) for s in states]
+            else:
+                col_values = [1.0 / num_states] * num_states
+            
+            # 归一化
+            total = sum(col_values)
+            if total > 0:
+                col_values = [v / total for v in col_values]
+            
+            for row_idx in range(num_states):
+                values[row_idx][col_idx] = col_values[row_idx]
+        
+        return values
+    
+    def _generate_causal_cpt(
+        self,
+        states: List[str],
+        parents: List[str],
+        parent_cards: List[int],
+        parent_state_names: Dict[str, List[str]],
+        node_states: Dict[str, List[str]],
+        prior: Optional[Dict[str, float]]
+    ) -> List[List[float]]:
+        """
+        生成有因果效应的默认 CPT。
+        
+        策略：每个父节点的第 i 个状态会"倾向于"让子节点偏向第 i 个状态。
+        这样画了箭头就立刻能看到因果效应，而不是平铺的无效 CPT。
+        
+        例如：Parent 有 [High, Low], Child 有 [High, Low]
+        生成：
+            Parent=High: Child=[0.8, 0.2]  (倾向 High)
+            Parent=Low:  Child=[0.2, 0.8]  (倾向 Low)
+        """
+        import itertools
+        
+        num_states = len(states)
+        parent_state_lists = [parent_state_names[p] for p in parents]
+        combos = list(itertools.product(*parent_state_lists))
+        num_combos = len(combos)
+        
+        # 因果强度 —— 0.7 表示"明显但不绝对"的默认因果关系
+        strength = 0.7
+        
+        values = [[0.0] * num_combos for _ in range(num_states)]
+        
+        for col_idx, combo in enumerate(combos):
+            # 计算每个父节点对子节点各状态的"投票"
+            votes = np.zeros(num_states)
+            
+            for p_idx, parent_name in enumerate(parents):
+                p_states = parent_state_names[parent_name]
+                p_state_idx = p_states.index(combo[p_idx])
+                
+                # 父节点的第 i 个状态倾向于子节点的第 i 个状态
+                # 如果父子状态数不同，用取模映射
+                child_favored_idx = p_state_idx % num_states
+                
+                # 给 favored 状态加高权重
+                for s_idx in range(num_states):
+                    if s_idx == child_favored_idx:
+                        votes[s_idx] += strength
+                    else:
+                        votes[s_idx] += (1.0 - strength) / max(1, num_states - 1)
+            
+            # 对多个父节点的投票取平均
+            votes /= len(parents)
+            
+            # 归一化
+            total = votes.sum()
+            if total > 0:
+                votes /= total
+            
+            for row_idx in range(num_states):
+                values[row_idx][col_idx] = float(votes[row_idx])
+        
+        return values
 
 
 # 全局模型实例

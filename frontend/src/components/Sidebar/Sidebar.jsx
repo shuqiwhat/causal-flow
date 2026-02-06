@@ -241,6 +241,170 @@ function AddNodeModal({ isOpen, onClose, onAdd }) {
 
 
 // ============================================================
+// CPT Editor Modal — Edit conditional probability tables for child nodes
+// ============================================================
+function CPTEditorModal({ isOpen, onClose, node, parentNodes }) {
+    const [cptData, setCptData] = useState({});
+    const [error, setError] = useState('');
+
+    const states = node?.data?.states || [];
+    const parents = parentNodes || [];
+
+    // Generate all parent state combinations
+    const getParentCombos = useCallback(() => {
+        if (parents.length === 0) return [];
+        const parentStateLists = parents.map(p => p.data?.states || []);
+        
+        const combos = [[]];
+        for (const stateList of parentStateLists) {
+            const newCombos = [];
+            for (const combo of combos) {
+                for (const state of stateList) {
+                    newCombos.push([...combo, state]);
+                }
+            }
+            combos.length = 0;
+            combos.push(...newCombos);
+        }
+        return combos;
+    }, [parents]);
+
+    const parentCombos = getParentCombos();
+
+    // Initialize CPT with existing data or defaults
+    useEffect(() => {
+        if (!isOpen || !node) return;
+
+        const existing = node.data?.cpt || {};
+        const initial = {};
+        
+        for (const combo of parentCombos) {
+            const key = combo.join(',');
+            if (existing[key]) {
+                initial[key] = { ...existing[key] };
+            } else {
+                // Default: first state gets high probability
+                const defaultDist = {};
+                states.forEach((s, i) => {
+                    defaultDist[s] = i === 0 ? (0.7).toFixed(2) : ((0.3 / Math.max(1, states.length - 1))).toFixed(2);
+                });
+                initial[key] = defaultDist;
+            }
+        }
+        setCptData(initial);
+        setError('');
+    }, [isOpen, node?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleValueChange = (comboKey, state, value) => {
+        setCptData(prev => ({
+            ...prev,
+            [comboKey]: {
+                ...prev[comboKey],
+                [state]: value,
+            },
+        }));
+    };
+
+    const handleSave = () => {
+        // Validate all rows sum to ~1
+        const parsed = {};
+        for (const [comboKey, dist] of Object.entries(cptData)) {
+            parsed[comboKey] = {};
+            let total = 0;
+            for (const s of states) {
+                const val = parseFloat(dist[s]);
+                if (isNaN(val) || val < 0) {
+                    setError(`Invalid value for ${comboKey} → ${s}`);
+                    return;
+                }
+                parsed[comboKey][s] = val;
+                total += val;
+            }
+            if (Math.abs(total - 1.0) > 0.05) {
+                setError(`Row "${comboKey}" sums to ${total.toFixed(3)}, should be ≈ 1.0`);
+                return;
+            }
+        }
+
+        useFlowStore.getState().updateNodeCpt(node.id, parsed);
+        onClose();
+    };
+
+    if (!isOpen || !node) return null;
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content cpt-editor-modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <span>Edit CPT: {node.data?.label || node.id}</span>
+                    <button className="modal-close" onClick={onClose}><Icons.Close /></button>
+                </div>
+
+                <div className="cpt-description">
+                    Define how <strong>{node.data?.label}</strong>'s probability changes based on its parent(s): {parents.map(p => p.data?.label || p.id).join(', ')}.
+                </div>
+
+                <div className="cpt-table-wrapper">
+                    <table className="cpt-table">
+                        <thead>
+                            <tr>
+                                {parents.map(p => (
+                                    <th key={p.id} className="cpt-parent-header">{p.data?.label || p.id}</th>
+                                ))}
+                                {states.map(s => (
+                                    <th key={s} className="cpt-state-header">{s}</th>
+                                ))}
+                                <th className="cpt-sum-header">Σ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {parentCombos.map((combo, idx) => {
+                                const key = combo.join(',');
+                                const dist = cptData[key] || {};
+                                const sum = states.reduce((t, s) => t + (parseFloat(dist[s]) || 0), 0);
+                                const sumOk = Math.abs(sum - 1.0) <= 0.05;
+
+                                return (
+                                    <tr key={idx}>
+                                        {combo.map((val, ci) => (
+                                            <td key={ci} className="cpt-parent-cell">{val}</td>
+                                        ))}
+                                        {states.map(s => (
+                                            <td key={s} className="cpt-input-cell">
+                                                <input
+                                                    type="number"
+                                                    step="0.05"
+                                                    min="0"
+                                                    max="1"
+                                                    value={dist[s] || ''}
+                                                    onChange={e => handleValueChange(key, s, e.target.value)}
+                                                    className="cpt-input"
+                                                />
+                                            </td>
+                                        ))}
+                                        <td className={`cpt-sum-cell ${sumOk ? 'sum-ok' : 'sum-bad'}`}>
+                                            {sum.toFixed(2)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                {error && <div className="modal-error">{error}</div>}
+                <div className="cpt-actions">
+                    <button type="button" className="modal-submit" onClick={handleSave}>
+                        Save CPT
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+// ============================================================
 // Sidebar Component
 // ============================================================
 function Sidebar() {
@@ -252,6 +416,7 @@ function Sidebar() {
     const [sidebarWidth, setSidebarWidth] = useState(260);
     const [isResizing, setIsResizing] = useState(false);
     const [showAddNode, setShowAddNode] = useState(false);
+    const [cptEditNode, setCptEditNode] = useState(null);
     const sidebarRef = useRef(null);
 
     const {
@@ -575,7 +740,14 @@ function Sidebar() {
                                 {/* Node List */}
                                 {nodes.length > 0 && (
                                     <div className="manual-nodes-list">
-                                        {nodes.map(node => (
+                                        {nodes.map(node => {
+                                            // Check if this node has incoming edges (is a child node)
+                                            const hasParents = edges.some(e => e.target === node.id);
+                                            const parentNodes = hasParents
+                                                ? edges.filter(e => e.target === node.id).map(e => nodes.find(n => n.id === e.source)).filter(Boolean)
+                                                : [];
+                                            
+                                            return (
                                             <div key={node.id} className="manual-node-item">
                                                 <div className="manual-node-info">
                                                     <span className="manual-node-name">
@@ -592,17 +764,32 @@ function Sidebar() {
                                                         {!node.data?.isManual && (
                                                             <span className="prior-badge prior-badge--csv">CSV</span>
                                                         )}
+                                                        {hasParents && node.data?.cpt && (
+                                                            <span className="prior-badge prior-badge--cpt">CPT ✓</span>
+                                                        )}
                                                     </span>
                                                 </div>
-                                                <button
-                                                    className="manual-node-remove"
-                                                    onClick={() => removeNode(node.id)}
-                                                    title="Remove node"
-                                                >
-                                                    ×
-                                                </button>
+                                                <div className="manual-node-actions">
+                                                    {hasParents && node.data?.isManual && (
+                                                        <button
+                                                            className="manual-node-cpt-btn"
+                                                            onClick={() => setCptEditNode({ node, parentNodes })}
+                                                            title="Edit Conditional Probability Table"
+                                                        >
+                                                            CPT
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        className="manual-node-remove"
+                                                        onClick={() => removeNode(node.id)}
+                                                        title="Remove node"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </>
@@ -768,6 +955,14 @@ function Sidebar() {
                 isOpen={showAddNode}
                 onClose={() => setShowAddNode(false)}
                 onAdd={handleAddNode}
+            />
+
+            {/* CPT Editor Modal */}
+            <CPTEditorModal
+                isOpen={!!cptEditNode}
+                onClose={() => setCptEditNode(null)}
+                node={cptEditNode?.node}
+                parentNodes={cptEditNode?.parentNodes}
             />
         </>
     );

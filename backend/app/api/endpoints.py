@@ -266,7 +266,7 @@ async def build_from_priors(request: BuildFromPriorsRequest):
     
     try:
         nodes_def = [
-            {"name": n.name, "states": n.states, "prior": n.prior}
+            {"name": n.name, "states": n.states, "prior": n.prior, "cpt": n.cpt}
             for n in request.nodes
         ]
         result = global_engine.build_from_priors(nodes_def, edges)

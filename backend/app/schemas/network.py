@@ -95,6 +95,7 @@ class NodeDefinition(BaseModel):
     name: str
     states: List[str]
     prior: Optional[Dict[str, float]] = None  # e.g. {"True": 0.6, "False": 0.4}
+    cpt: Optional[Dict[str, Dict[str, float]]] = None  # e.g. {"High,True": {"Yes": 0.9, "No": 0.1}, ...}
 
 
 class BuildFromPriorsRequest(BaseModel):

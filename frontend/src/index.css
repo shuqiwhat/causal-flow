@@ -1257,3 +1257,158 @@ body,
 .hidden {
   display: none;
 }
+
+/* ============================================
+   CPT Editor Modal
+   ============================================ */
+
+.cpt-editor-modal {
+  max-width: 600px;
+  width: 90vw;
+}
+
+.cpt-description {
+  font-size: 12px;
+  color: var(--cf-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: var(--cf-accent-subtle);
+  border-radius: 6px;
+}
+
+.cpt-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 12px;
+  border: 1px solid var(--cf-border);
+  border-radius: 6px;
+}
+
+.cpt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.cpt-table th {
+  padding: 8px 10px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--cf-border);
+  white-space: nowrap;
+}
+
+.cpt-parent-header {
+  background: var(--cf-bg-secondary);
+  color: var(--cf-text-secondary);
+}
+
+.cpt-state-header {
+  background: var(--cf-accent-subtle);
+  color: var(--cf-accent);
+}
+
+.cpt-sum-header {
+  background: var(--cf-bg-secondary);
+  color: var(--cf-text-tertiary);
+  width: 50px;
+}
+
+.cpt-table td {
+  padding: 4px 6px;
+  text-align: center;
+  border-bottom: 1px solid var(--cf-border-subtle);
+}
+
+.cpt-parent-cell {
+  font-weight: 500;
+  color: var(--cf-text-secondary);
+  background: var(--cf-bg-secondary);
+  font-size: 11px;
+}
+
+.cpt-input-cell {
+  padding: 3px 4px;
+}
+
+.cpt-input {
+  width: 60px;
+  padding: 5px 6px;
+  font-size: 12px;
+  border: 1px solid var(--cf-border);
+  border-radius: 4px;
+  background: var(--cf-bg-primary);
+  color: var(--cf-text-primary);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s ease;
+}
+
+.cpt-input:focus {
+  outline: none;
+  border-color: var(--cf-accent);
+  box-shadow: 0 0 0 2px var(--cf-accent-subtle);
+}
+
+.cpt-input::-webkit-inner-spin-button,
+.cpt-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.cpt-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.cpt-sum-cell {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+.cpt-sum-cell.sum-ok {
+  color: var(--cf-success);
+}
+
+.cpt-sum-cell.sum-bad {
+  color: var(--cf-error);
+}
+
+.cpt-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* CPT button in node list */
+.manual-node-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.manual-node-cpt-btn {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--cf-accent-subtle);
+  color: var(--cf-accent);
+  border: 1px solid var(--cf-accent);
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all 0.15s ease;
+}
+
+.manual-node-cpt-btn:hover {
+  background: var(--cf-accent);
+  color: white;
+}
+
+/* CPT badge */
+.prior-badge--cpt {
+  background: #dbeafe;
+  color: #2563eb;
+}
