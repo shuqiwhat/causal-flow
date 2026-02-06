@@ -1,15 +1,22 @@
 import dagre from 'dagre';
 import { Position } from '@xyflow/react';
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-
 const nodeWidth = 180;
 const nodeHeight = 100;
 
 export const getLayoutedElements = (nodes, edges, direction = 'TB') => {
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
+
     const isHorizontal = direction === 'LR';
-    dagreGraph.setGraph({ rankdir: direction });
+    dagreGraph.setGraph({
+        rankdir: direction,
+        ranksep: 80,    // 层级间距
+        nodesep: 40,    // 同层节点间距
+        edgesep: 20,    // 边间距
+        marginx: 20,
+        marginy: 20,
+    });
 
     nodes.forEach((node) => {
         dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
@@ -27,8 +34,6 @@ export const getLayoutedElements = (nodes, edges, direction = 'TB') => {
             ...node,
             targetPosition: isHorizontal ? Position.Left : Position.Top,
             sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
-            // We are shifting the dagre node position (anchor=center center) to the top left
-            // so it matches the React Flow node anchor point (top left).
             position: {
                 x: nodeWithPosition.x - nodeWidth / 2,
                 y: nodeWithPosition.y - nodeHeight / 2,

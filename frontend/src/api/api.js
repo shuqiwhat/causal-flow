@@ -1,5 +1,5 @@
 // API 客户端 - 与后端通信
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 /**
  * 上传 CSV 文件到后端
@@ -110,6 +110,27 @@ export async function addNode(name, states, prior = null) {
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || '添加节点失败');
+    }
+
+    return response.json();
+}
+
+/**
+ * 从先验概率构建模型（不需要 CSV 数据）
+ * @param {Array} nodes - [{name, states, prior}, ...]
+ * @param {Array} edges - [{source, target}, ...]
+ * @returns {Promise<Object>}
+ */
+export async function buildFromPriors(nodes, edges) {
+    const response = await fetch(`${API_BASE_URL}/build_from_priors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodes, edges }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || '构建模型失败');
     }
 
     return response.json();

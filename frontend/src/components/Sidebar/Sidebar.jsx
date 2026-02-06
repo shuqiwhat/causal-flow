@@ -1,6 +1,6 @@
-// Sidebar - Workflow Pipeline 组件 with Resize and Add Node
+// Sidebar - Workflow Pipeline 组件 with Resize, Add Node with Priors, 3 Modes
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { uploadCSV, learnStructure, learnParameters, validateStructure } from '../../api/api';
+import { uploadCSV, learnStructure, learnParameters, validateStructure, buildFromPriors } from '../../api/api';
 import useFlowStore from '../../hooks/useFlowStore';
 
 // Icons - 简洁线条风格
@@ -85,14 +85,24 @@ const Icons = {
             <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
     ),
+    Bolt: () => (
+        <svg className="action-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <polygon points="13,2 3,14 12,14 11,22 21,10 12,10" />
+        </svg>
+    ),
 };
 
-// Add Node Modal Component
+// ============================================================
+// Add Node Modal - 带 Prior 概率输入
+// ============================================================
 function AddNodeModal({ isOpen, onClose, onAdd }) {
     const [nodeName, setNodeName] = useState('');
     const [states, setStates] = useState('True, False');
+    const [priors, setPriors] = useState({});
     const [error, setError] = useState('');
     const inputRef = useRef(null);
+
+    const parsedStates = states.split(',').map(s => s.trim()).filter(s => s);
 
     useEffect(() => {
         if (isOpen && inputRef.current) {
@@ -100,20 +110,65 @@ function AddNodeModal({ isOpen, onClose, onAdd }) {
         }
     }, [isOpen]);
 
+    // 同步 prior 键与当前 states
+    useEffect(() => {
+        const newPriors = {};
+        parsedStates.forEach((s) => {
+            newPriors[s] = priors[s] !== undefined ? priors[s] : '';
+        });
+        setPriors(newPriors);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [states]);
+
+    const handlePriorChange = (state, value) => {
+        setPriors(prev => ({ ...prev, [state]: value }));
+    };
+
+    const fillUniform = () => {
+        const count = parsedStates.length;
+        if (count === 0) return;
+        const val = (1 / count).toFixed(4);
+        const newPriors = {};
+        parsedStates.forEach(s => { newPriors[s] = val; });
+        setPriors(newPriors);
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!nodeName.trim()) {
             setError('Node name is required');
             return;
         }
-        const stateList = states.split(',').map(s => s.trim()).filter(s => s);
-        if (stateList.length < 2) {
+        if (parsedStates.length < 2) {
             setError('At least 2 states required');
             return;
         }
-        onAdd(nodeName.trim(), stateList);
+
+        // 解析 prior
+        let prior = null;
+        const hasAnyPrior = parsedStates.some(s => priors[s] && priors[s] !== '');
+        if (hasAnyPrior) {
+            prior = {};
+            let total = 0;
+            for (const s of parsedStates) {
+                const val = parseFloat(priors[s]);
+                if (isNaN(val) || val < 0) {
+                    setError(`Invalid probability for "${s}"`);
+                    return;
+                }
+                prior[s] = val;
+                total += val;
+            }
+            if (Math.abs(total - 1.0) > 0.05) {
+                setError(`Probabilities sum to ${total.toFixed(3)}, should be 1.0`);
+                return;
+            }
+        }
+
+        onAdd(nodeName.trim(), parsedStates, prior);
         setNodeName('');
         setStates('True, False');
+        setPriors({});
         setError('');
         onClose();
     };
@@ -147,6 +202,41 @@ function AddNodeModal({ isOpen, onClose, onAdd }) {
                             placeholder="e.g. High, Medium, Low"
                         />
                     </div>
+
+                    {/* Prior Probability Inputs */}
+                    {parsedStates.length >= 2 && (
+                        <div className="modal-field">
+                            <div className="prior-header">
+                                <label>Prior Probabilities <span className="prior-optional">(optional)</span></label>
+                                <button type="button" className="prior-uniform-btn" onClick={fillUniform}>
+                                    Uniform
+                                </button>
+                            </div>
+                            <div className="prior-inputs">
+                                {parsedStates.map(s => (
+                                    <div key={s} className="prior-row">
+                                        <span className="prior-state-label">{s}</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            max="1"
+                                            value={priors[s] || ''}
+                                            onChange={e => handlePriorChange(s, e.target.value)}
+                                            placeholder={`${(1 / parsedStates.length).toFixed(2)}`}
+                                            className="prior-input"
+                                        />
+                                    </div>
+                                ))}
+                                {parsedStates.some(s => priors[s] && priors[s] !== '') && (
+                                    <div className="prior-sum">
+                                        Σ = {parsedStates.reduce((sum, s) => sum + (parseFloat(priors[s]) || 0), 0).toFixed(3)}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {error && <div className="modal-error">{error}</div>}
                     <button type="submit" className="modal-submit">Add Node</button>
                 </form>
@@ -155,11 +245,16 @@ function AddNodeModal({ isOpen, onClose, onAdd }) {
     );
 }
 
+
+// ============================================================
+// Sidebar Component
+// ============================================================
 function Sidebar() {
     const [isDragging, setIsDragging] = useState(false);
     const [activeStep, setActiveStep] = useState('data');
     const [isAutoLearning, setIsAutoLearning] = useState(false);
     const [isTraining, setIsTraining] = useState(false);
+    const [isBuildingPriors, setIsBuildingPriors] = useState(false);
     const [sidebarWidth, setSidebarWidth] = useState(260);
     const [isResizing, setIsResizing] = useState(false);
     const [showAddNode, setShowAddNode] = useState(false);
@@ -171,7 +266,6 @@ function Sidebar() {
         setError,
         setSuccess,
         isLoading,
-        error,
         metadata,
         clearCanvas,
         edges,
@@ -184,6 +278,12 @@ function Sidebar() {
         addManualNode,
         removeNode,
     } = useFlowStore();
+
+    // 判断工作模式
+    const hasData = !!metadata;
+    const hasManualNodes = nodes.some(n => n.data?.isManual);
+    const hasNodes = nodes.length > 0;
+    const hasEdges = edges.length > 0;
 
     // Resize handlers
     const handleResizeStart = useCallback((e) => {
@@ -235,23 +335,24 @@ function Sidebar() {
         }
     }, [setNodesFromCSV, setLoading, setError]);
 
-    // 添加手工节点
-    const handleAddNode = useCallback((name, states) => {
-        // Check for duplicate names
+    // 添加手工节点 (with prior)
+    const handleAddNode = useCallback((name, states, prior) => {
         const existingNames = nodes.map(n => n.data?.label || n.id);
         if (existingNames.includes(name)) {
             setError(`Node "${name}" already exists`);
             return;
         }
-        addManualNode(name, states);
+        addManualNode(name, states, prior);
         setSuccess(`Added node: ${name}`);
-        setActiveStep('structure');
-    }, [nodes, addManualNode, setError, setSuccess]);
+        if (activeStep === 'data') {
+            setActiveStep('structure');
+        }
+    }, [nodes, addManualNode, setError, setSuccess, activeStep]);
 
-    // 自动学习结构
+    // 自动学习结构（需要数据）
     const handleAutoLearn = useCallback(async () => {
         if (!metadata) {
-            setError('Please upload data first for auto-learning');
+            setError('Auto-learn requires uploaded data');
             return;
         }
         setIsAutoLearning(true);
@@ -261,6 +362,10 @@ function Sidebar() {
             const result = await learnStructure('k2');
             setEdgesFromLearned(result.edges);
             setSuccess(`Learned ${result.edge_count} edges`);
+            // 触发自动层级布局
+            setTimeout(() => {
+                useFlowStore.getState().triggerAutoLayout?.();
+            }, 100);
         } catch (err) {
             setError(err.message || 'Auto learn failed');
         } finally {
@@ -268,7 +373,7 @@ function Sidebar() {
         }
     }, [metadata, setEdgesFromLearned, setError, setSuccess]);
 
-    // 训练模型
+    // 训练模型（从数据学习参数 CPT）
     const handleTrain = useCallback(async () => {
         const edgeList = getEdgeList();
         if (edgeList.length === 0) {
@@ -290,7 +395,7 @@ function Sidebar() {
             const result = await learnParameters(edgeList, 'mle');
             if (result.success) {
                 setModelTrained(true);
-                setSuccess('Model trained successfully');
+                setSuccess('Model trained from data');
                 setActiveStep('inference');
             }
         } catch (err) {
@@ -299,6 +404,42 @@ function Sidebar() {
             setIsTraining(false);
         }
     }, [getEdgeList, setError, setSuccess, setModelTrained]);
+
+    // 从先验构建模型（不需要数据）
+    const handleBuildFromPriors = useCallback(async () => {
+        const nodeDefs = useFlowStore.getState().getNodeDefinitions();
+        const edgeList = useFlowStore.getState().getEdgeList();
+
+        if (nodeDefs.length === 0) {
+            setError('No nodes defined');
+            return;
+        }
+
+        setIsBuildingPriors(true);
+        setError(null);
+
+        try {
+            if (edgeList.length > 0) {
+                const validation = await validateStructure(edgeList);
+                if (!validation.is_valid) {
+                    setError(validation.message);
+                    setIsBuildingPriors(false);
+                    return;
+                }
+            }
+
+            const result = await buildFromPriors(nodeDefs, edgeList);
+            if (result.success) {
+                setModelTrained(true);
+                setSuccess('Model built from priors — ready for inference');
+                setActiveStep('inference');
+            }
+        } catch (err) {
+            setError(err.message || 'Build failed');
+        } finally {
+            setIsBuildingPriors(false);
+        }
+    }, [setError, setSuccess, setModelTrained]);
 
     // 清除边
     const handleClearEdges = useCallback(() => {
@@ -328,7 +469,15 @@ function Sidebar() {
         handleUpload(file);
     }, [handleUpload]);
 
-    const hasNodes = nodes.length > 0;
+    // 获取当前 workflow 模式描述
+    const getWorkflowMode = () => {
+        if (hasData && hasManualNodes) return 'hybrid';
+        if (hasData) return 'data';
+        if (hasManualNodes) return 'manual';
+        return 'empty';
+    };
+
+    const workflowMode = getWorkflowMode();
 
     return (
         <>
@@ -343,7 +492,7 @@ function Sidebar() {
                     onMouseDown={handleResizeStart}
                 />
 
-                {/* Header - Context */}
+                {/* Header */}
                 <div className="sidebar-header">
                     <div className="sidebar-logo">
                         <Icons.Logo />
@@ -352,9 +501,9 @@ function Sidebar() {
                     <div className="sidebar-project">Bayesian Network Workbench</div>
                 </div>
 
-                {/* Pipeline - Core */}
+                {/* Pipeline */}
                 <nav className="sidebar-pipeline">
-                    {/* Step 1: Data Source */}
+                    {/* ========== Step 1: Data Source ========== */}
                     <div className="pipeline-section">
                         <div
                             className={`pipeline-item ${activeStep === 'data' ? 'active' : ''}`}
@@ -365,12 +514,12 @@ function Sidebar() {
                                 <div className="pipeline-item-title">Data Source</div>
                                 <div className="pipeline-item-subtitle">Import or Create</div>
                             </div>
-                            {metadata && <span className="pipeline-badge">Done</span>}
+                            {(metadata || hasManualNodes) && <span className="pipeline-badge">Done</span>}
                         </div>
 
-                        {/* Upload Zone & Add Node */}
                         {activeStep === 'data' && (
                             <>
+                                {/* CSV Upload */}
                                 {isLoading ? (
                                     <div className="upload-loading">
                                         <div className="upload-spinner" />
@@ -390,31 +539,29 @@ function Sidebar() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <>
-                                        <div
-                                            className={`upload-zone ${isDragging ? 'dragging' : ''}`}
-                                            onDragOver={handleDragOver}
-                                            onDragLeave={handleDragLeave}
-                                            onDrop={handleDrop}
-                                            onClick={() => document.getElementById('csv-input').click()}
-                                        >
-                                            <div className="upload-zone-icon">
-                                                <Icons.Upload />
-                                            </div>
-                                            <div className="upload-zone-text">
-                                                Drop CSV file here
-                                                <br />
-                                                or click to browse
-                                            </div>
-                                            <input
-                                                id="csv-input"
-                                                type="file"
-                                                accept=".csv"
-                                                className="hidden"
-                                                onChange={handleFileChange}
-                                            />
+                                    <div
+                                        className={`upload-zone ${isDragging ? 'dragging' : ''}`}
+                                        onDragOver={handleDragOver}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={handleDrop}
+                                        onClick={() => document.getElementById('csv-input').click()}
+                                    >
+                                        <div className="upload-zone-icon">
+                                            <Icons.Upload />
                                         </div>
-                                    </>
+                                        <div className="upload-zone-text">
+                                            Drop CSV file here
+                                            <br />
+                                            or click to browse
+                                        </div>
+                                        <input
+                                            id="csv-input"
+                                            type="file"
+                                            accept=".csv"
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                        />
+                                    </div>
                                 )}
 
                                 {/* Divider */}
@@ -422,7 +569,7 @@ function Sidebar() {
                                     <span>{metadata ? 'and' : 'or'} build manually</span>
                                 </div>
 
-                                {/* Add Node Button - Always Visible */}
+                                {/* Add Node Button */}
                                 <button
                                     className="action-btn action-btn--ghost"
                                     onClick={() => setShowAddNode(true)}
@@ -431,14 +578,28 @@ function Sidebar() {
                                     Add Node
                                 </button>
 
-                                {/* List of All Nodes (Renamed for clarity: Manual & Imported) */}
+                                {/* Node List */}
                                 {nodes.length > 0 && (
                                     <div className="manual-nodes-list">
                                         {nodes.map(node => (
                                             <div key={node.id} className="manual-node-item">
-                                                <span className="manual-node-name">
-                                                    Node: {node.data?.label || node.id}
-                                                </span>
+                                                <div className="manual-node-info">
+                                                    <span className="manual-node-name">
+                                                        {node.data?.label || node.id}
+                                                    </span>
+                                                    <span className="manual-node-detail">
+                                                        {node.data?.states?.length || 0} states
+                                                        {node.data?.isManual && node.data?.prior && (
+                                                            <span className="prior-badge">Prior ✓</span>
+                                                        )}
+                                                        {node.data?.isManual && !node.data?.prior && (
+                                                            <span className="prior-badge prior-badge--missing">Uniform</span>
+                                                        )}
+                                                        {!node.data?.isManual && (
+                                                            <span className="prior-badge prior-badge--csv">CSV</span>
+                                                        )}
+                                                    </span>
+                                                </div>
                                                 <button
                                                     className="manual-node-remove"
                                                     onClick={() => removeNode(node.id)}
@@ -454,7 +615,7 @@ function Sidebar() {
                         )}
                     </div>
 
-                    {/* Step 2: Network Graph */}
+                    {/* ========== Step 2: Network Graph ========== */}
                     <div className="pipeline-section">
                         <div
                             className={`pipeline-item ${activeStep === 'structure' ? 'active' : ''}`}
@@ -469,14 +630,24 @@ function Sidebar() {
                             {modelTrained && <span className="pipeline-badge">Trained</span>}
                         </div>
 
-                        {/* Structure Actions */}
                         {activeStep === 'structure' && hasNodes && (
                             <div className="structure-actions">
+                                {/* Mode indicator */}
                                 <div className="structure-info">
                                     {edges.length} edge{edges.length !== 1 ? 's' : ''} defined
+                                    {workflowMode === 'manual' && (
+                                        <span className="mode-hint"> · Manual mode</span>
+                                    )}
+                                    {workflowMode === 'data' && (
+                                        <span className="mode-hint"> · Data mode</span>
+                                    )}
+                                    {workflowMode === 'hybrid' && (
+                                        <span className="mode-hint"> · Hybrid mode</span>
+                                    )}
                                 </div>
 
-                                {metadata && (
+                                {/* Auto Learn - 只在有数据时显示 */}
+                                {hasData && (
                                     <button
                                         className="action-btn action-btn--primary"
                                         onClick={handleAutoLearn}
@@ -487,28 +658,69 @@ function Sidebar() {
                                     </button>
                                 )}
 
-                                <button
-                                    className="action-btn action-btn--success"
-                                    onClick={handleTrain}
-                                    disabled={isTraining || edges.length === 0}
-                                >
-                                    <Icons.Play />
-                                    {isTraining ? 'Training...' : 'Train Model'}
-                                </button>
+                                {/* Train from Data - 有数据 + 有边 */}
+                                {hasData && (
+                                    <button
+                                        className="action-btn action-btn--success"
+                                        onClick={handleTrain}
+                                        disabled={isTraining || !hasEdges}
+                                    >
+                                        <Icons.Play />
+                                        {isTraining ? 'Training...' : 'Train Model'}
+                                    </button>
+                                )}
+
+                                {/* Build from Priors - 在没有数据时作为主按钮 */}
+                                {!hasData && (
+                                    <button
+                                        className="action-btn action-btn--accent"
+                                        onClick={handleBuildFromPriors}
+                                        disabled={isBuildingPriors || !hasNodes}
+                                        title="Nodes without prior will use uniform distribution"
+                                    >
+                                        <Icons.Bolt />
+                                        {isBuildingPriors ? 'Building...' : 'Build & Infer'}
+                                    </button>
+                                )}
+
+                                {/* Hybrid 模式提供两种选择 */}
+                                {hasData && hasManualNodes && (
+                                    <>
+                                        <div className="structure-divider">
+                                            <span>or use priors only</span>
+                                        </div>
+                                        <button
+                                            className="action-btn action-btn--ghost"
+                                            onClick={handleBuildFromPriors}
+                                            disabled={isBuildingPriors}
+                                        >
+                                            <Icons.Bolt />
+                                            {isBuildingPriors ? 'Building...' : 'Build from Priors'}
+                                        </button>
+                                    </>
+                                )}
 
                                 <button
                                     className="action-btn action-btn--ghost"
                                     onClick={handleClearEdges}
-                                    disabled={edges.length === 0}
+                                    disabled={!hasEdges}
                                 >
                                     <Icons.Trash />
                                     Clear Edges
+                                </button>
+
+                                <button
+                                    className="action-btn action-btn--ghost"
+                                    onClick={() => setShowAddNode(true)}
+                                >
+                                    <Icons.Plus />
+                                    Add Node
                                 </button>
                             </div>
                         )}
                     </div>
 
-                    {/* Step 3: Inference */}
+                    {/* ========== Step 3: Inference ========== */}
                     <div className="pipeline-section">
                         <div
                             className={`pipeline-item ${activeStep === 'inference' ? 'active' : ''}`}
@@ -522,7 +734,6 @@ function Sidebar() {
                             </div>
                         </div>
 
-                        {/* Inference Actions */}
                         {activeStep === 'inference' && modelTrained && (
                             <div className="structure-actions">
                                 <div className="structure-info">
@@ -542,10 +753,10 @@ function Sidebar() {
                             </div>
                         )}
                     </div>
-                </nav >
+                </nav>
 
-                {/* Utility - Bottom */}
-                < div className="sidebar-utility" >
+                {/* Utility */}
+                <div className="sidebar-utility">
                     <div className="utility-item">
                         <Icons.Export />
                         <span>Export</span>
@@ -554,14 +765,13 @@ function Sidebar() {
                         <Icons.Settings />
                         <span>Settings</span>
                     </div>
-                </div >
-            </aside >
+                </div>
+            </aside>
 
             {/* Add Node Modal */}
-            < AddNodeModal
+            <AddNodeModal
                 isOpen={showAddNode}
-                onClose={() => setShowAddNode(false)
-                }
+                onClose={() => setShowAddNode(false)}
                 onAdd={handleAddNode}
             />
         </>

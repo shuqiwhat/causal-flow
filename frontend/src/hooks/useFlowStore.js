@@ -40,6 +40,9 @@ const useFlowStore = create((set, get) => ({
     error: null,
     successMessage: null,
 
+    // 自动布局触发器 (counter, 每次递增触发 FlowEditor 内部的布局)
+    autoLayoutTrigger: 0,
+
     // 设置节点
     setNodes: (nodes) => set({ nodes }),
 
@@ -101,7 +104,7 @@ const useFlowStore = create((set, get) => ({
         });
     },
 
-    // 设置自动学习的边
+    // 设置自动学习的边 + 触发层级布局
     setEdgesFromLearned: (learnedEdges) => {
         const edges = learnedEdges.map((e) => ({
             id: `${e.source}-${e.target}`,
@@ -114,7 +117,11 @@ const useFlowStore = create((set, get) => ({
                 color: 'var(--color-accent)',
             },
         }));
-        set({ edges, modelTrained: false });
+        set({
+            edges,
+            modelTrained: false,
+            autoLayoutTrigger: get().autoLayoutTrigger + 1,
+        });
     },
 
     // 清除所有边
@@ -155,7 +162,7 @@ const useFlowStore = create((set, get) => ({
     },
 
     // 添加手工节点 (不需要 CSV 数据)
-    addManualNode: (name, states) => {
+    addManualNode: (name, states, prior = null) => {
         const existingNodes = get().nodes;
         const nodesPerRow = Math.max(2, Math.ceil(Math.sqrt(existingNodes.length + 1)));
         const index = existingNodes.length;
@@ -170,8 +177,9 @@ const useFlowStore = create((set, get) => ({
             data: {
                 label: name,
                 states: states,
-                isManual: true, // 标记为手工创建
-                prior: null,    // 将来可以存储 prior
+                isManual: true,
+                prior: prior,       // 用户设置的先验概率
+                distribution: null,
             },
         };
 
@@ -179,6 +187,31 @@ const useFlowStore = create((set, get) => ({
             nodes: [...existingNodes, newNode],
             modelTrained: false,
         });
+    },
+
+    // 更新节点的 prior
+    updateNodePrior: (nodeId, prior) => {
+        const nodes = get().nodes.map(n => {
+            if (n.id === nodeId) {
+                return { ...n, data: { ...n.data, prior } };
+            }
+            return n;
+        });
+        set({ nodes, modelTrained: false });
+    },
+
+    // 获取节点定义列表（用于 build_from_priors API）
+    getNodeDefinitions: () => {
+        return get().nodes.map(n => ({
+            name: n.id,
+            states: n.data?.states || [],
+            prior: n.data?.prior || null,
+        }));
+    },
+
+    // 判断是否有手动节点
+    hasManualNodes: () => {
+        return get().nodes.some(n => n.data?.isManual);
     },
 
     // 清空画布
@@ -205,6 +238,9 @@ const useFlowStore = create((set, get) => ({
 
     // 清除消息
     clearMessages: () => set({ error: null, successMessage: null }),
+
+    // 触发自动布局 (FlowEditor 监听这个 counter 变化)
+    triggerAutoLayout: () => set({ autoLayoutTrigger: get().autoLayoutTrigger + 1 }),
 
     // ========== Phase 3: Inference ==========
 

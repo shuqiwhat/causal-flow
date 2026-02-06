@@ -739,28 +739,41 @@ body,
    ============================================ */
 
 .status-badge {
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
   z-index: 10;
-  animation: fadeIn 0.2s ease;
+  animation: badgeFadeIn 0.2s ease;
 }
 
-@keyframes fadeIn {
+@keyframes badgeFadeIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-8px);
+    transform: translateY(-8px);
   }
 
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
+}
+
+.toast-close {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.toast-close:hover {
+  opacity: 1;
 }
 
 .status-badge--success {
@@ -1002,4 +1015,202 @@ body,
 
 .modal-submit:hover {
   background: #1d4ed8;
+}
+
+/* ============================================
+   Prior Probability Inputs
+   ============================================ */
+
+.prior-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.prior-header label {
+  margin-bottom: 0 !important;
+}
+
+.prior-optional {
+  font-weight: 400;
+  color: var(--cf-text-tertiary);
+  font-size: 11px;
+}
+
+.prior-uniform-btn {
+  font-size: 11px;
+  padding: 3px 8px;
+  background: var(--cf-bg-primary);
+  border: 1px solid var(--cf-border);
+  border-radius: 4px;
+  color: var(--cf-accent);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.prior-uniform-btn:hover {
+  background: var(--cf-accent-subtle);
+  border-color: var(--cf-accent);
+}
+
+.prior-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prior-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prior-state-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cf-text-secondary);
+  min-width: 60px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prior-input {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 13px;
+  border: 1px solid var(--cf-border);
+  border-radius: 5px;
+  background: var(--cf-bg-primary);
+  color: var(--cf-text-primary);
+  transition: border-color 0.15s ease;
+  font-variant-numeric: tabular-nums;
+}
+
+.prior-input:focus {
+  outline: none;
+  border-color: var(--cf-accent);
+  box-shadow: 0 0 0 2px var(--cf-accent-subtle);
+}
+
+.prior-input::placeholder {
+  color: var(--cf-text-tertiary);
+}
+
+/* Remove spinner arrows from number inputs */
+.prior-input::-webkit-inner-spin-button,
+.prior-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.prior-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.prior-sum {
+  text-align: right;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--cf-text-tertiary);
+  padding: 4px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================
+   Prior Badge in Node List
+   ============================================ */
+
+.manual-node-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.manual-node-detail {
+  font-size: 10px;
+  color: var(--cf-text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prior-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--cf-success-subtle);
+  color: var(--cf-success);
+  font-weight: 500;
+}
+
+.prior-badge--missing {
+  background: var(--cf-bg-primary);
+  color: var(--cf-text-tertiary);
+  border: 1px solid var(--cf-border);
+}
+
+.prior-badge--csv {
+  background: var(--cf-accent-subtle);
+  color: var(--cf-accent);
+}
+
+/* ============================================
+   Structure Divider & Mode Hint
+   ============================================ */
+
+.structure-divider {
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+  font-size: 11px;
+  color: var(--cf-text-tertiary);
+}
+
+.structure-divider::before,
+.structure-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--cf-border-subtle);
+}
+
+.structure-divider span {
+  padding: 0 8px;
+}
+
+.mode-hint {
+  color: var(--cf-text-tertiary);
+  font-weight: 400;
+}
+
+/* Accent button variant */
+.action-btn--accent {
+  background: var(--cf-accent-subtle);
+  color: var(--cf-accent);
+  border-color: var(--cf-accent);
+}
+
+.action-btn--accent:hover:not(:disabled) {
+  background: var(--cf-accent);
+  color: white;
+}
+
+/* Inference hint */
+.inference-hint {
+  font-size: 11px;
+  color: var(--cf-text-tertiary);
+  padding: 8px 10px;
+  background: var(--cf-accent-subtle);
+  border-radius: 6px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+/* Hidden file input */
+.hidden {
+  display: none;
 }

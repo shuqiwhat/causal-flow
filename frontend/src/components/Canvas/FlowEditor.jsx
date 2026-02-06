@@ -45,6 +45,7 @@ function FlowEditor() {
         evidence,
         updateDistributions,
         setError,
+        autoLayoutTrigger,
     } = useFlowStore();
 
     const { fitView } = useReactFlow();
@@ -66,6 +67,29 @@ function FlowEditor() {
         },
         [nodes, edges, setNodes, setEdges, fitView]
     );
+
+    // 自动布局：当 autoLayoutTrigger 变化时，自动应用层级布局
+    useEffect(() => {
+        if (autoLayoutTrigger === 0) return; // 初始值不触发
+        // 稍微延迟以确保 nodes/edges 已更新
+        const timer = setTimeout(() => {
+            const currentNodes = useFlowStore.getState().nodes;
+            const currentEdges = useFlowStore.getState().edges;
+            if (currentNodes.length > 0 && currentEdges.length > 0) {
+                const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+                    currentNodes,
+                    currentEdges,
+                    'TB'
+                );
+                useFlowStore.getState().setNodes([...layoutedNodes]);
+                useFlowStore.getState().setEdges([...layoutedEdges]);
+                window.requestAnimationFrame(() => {
+                    fitView({ padding: 0.3 });
+                });
+            }
+        }, 50);
+        return () => clearTimeout(timer);
+    }, [autoLayoutTrigger, fitView]);
 
     // 当 evidence 变化时触发推理
     useEffect(() => {

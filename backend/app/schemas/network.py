@@ -88,6 +88,29 @@ class AddNodeResponse(BaseModel):
     message: str = ""
 
 
+# ========== Phase 2.6: Build Model from Priors ==========
+
+class NodeDefinition(BaseModel):
+    """节点定义（含先验）"""
+    name: str
+    states: List[str]
+    prior: Optional[Dict[str, float]] = None  # e.g. {"True": 0.6, "False": 0.4}
+
+
+class BuildFromPriorsRequest(BaseModel):
+    """从先验构建模型请求"""
+    nodes: List[NodeDefinition]
+    edges: List[Edge]
+
+
+class BuildFromPriorsResponse(BaseModel):
+    """构建模型响应"""
+    success: bool
+    nodes: int
+    edges: int
+    message: str = ""
+
+
 # ========== Phase 3: Inference ==========
 
 class InferRequest(BaseModel):

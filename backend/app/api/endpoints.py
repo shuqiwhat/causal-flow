@@ -1,4 +1,5 @@
 # API 路由定义
+from typing import Dict
 from fastapi import APIRouter, UploadFile, File, HTTPException
 
 from app.core.data_processor import DataProcessor
@@ -174,7 +175,11 @@ async def learn_parameters(request: LearnParametersRequest):
 
 # ========== Phase 2.5: Hybrid Modeling ==========
 
-from app.schemas.network import AddNodeRequest, AddNodeResponse
+from app.schemas.network import (
+    AddNodeRequest, AddNodeResponse,
+    BuildFromPriorsRequest, BuildFromPriorsResponse,
+    NodeDefinition,
+)
 
 # 存储手动添加的节点
 manual_nodes: Dict[str, Dict] = {}
@@ -223,6 +228,60 @@ async def add_node(request: AddNodeRequest):
         states=request.states,
         message=f"节点 '{request.name}' 添加成功"
     )
+
+
+@router.post(
+    "/build_from_priors",
+    response_model=BuildFromPriorsResponse,
+    summary="从先验概率构建模型",
+    description="不需要 CSV 数据，直接从用户定义的节点、边和先验概率构建贝叶斯网络"
+)
+async def build_from_priors(request: BuildFromPriorsRequest):
+    """从先验概率构建贝叶斯网络并启用推理"""
+    if len(request.nodes) < 1:
+        raise HTTPException(
+            status_code=400,
+            detail="至少需要 1 个节点"
+        )
+    
+    edges = [(e.source, e.target) for e in request.edges]
+    
+    # 验证 DAG
+    if edges:
+        is_valid, error_msg = global_engine.validate_dag(edges)
+        if not is_valid:
+            raise HTTPException(
+                status_code=400,
+                detail=error_msg
+            )
+    
+    # 验证边中的节点都已定义
+    node_names = {n.name for n in request.nodes}
+    for parent, child in edges:
+        if parent not in node_names or child not in node_names:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Edge ({parent} -> {child}) references undefined node"
+            )
+    
+    try:
+        nodes_def = [
+            {"name": n.name, "states": n.states, "prior": n.prior}
+            for n in request.nodes
+        ]
+        result = global_engine.build_from_priors(nodes_def, edges)
+        
+        return BuildFromPriorsResponse(
+            success=result["success"],
+            nodes=result["nodes"],
+            edges=result["edges"],
+            message="模型从先验概率构建完成，可以进行推理"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"构建失败: {str(e)}"
+        )
 
 
 @router.get(
@@ -324,7 +383,3 @@ async def infer(request: InferRequest):
 async def clear_evidence():
     """清除所有证据（实际上只需要前端调用 infer with empty evidence）"""
     return {"success": True, "message": "证据已清除"}
-
-
-# 需要导入 Dict
-from typing import Dict
