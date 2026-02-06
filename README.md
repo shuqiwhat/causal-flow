@@ -172,36 +172,13 @@ Open `http://localhost:5173` and start modeling.
 
 ---
 
-## 🌐 Deploy to Vercel
+## 🌐 Deploy
 
 > CausalFlow is a full-stack app (React frontend + FastAPI backend). Vercel can host the frontend; the backend needs a separate service.
 
 See the [Deployment Guide](#deployment-options) below for full instructions.
 
-### Option A: Frontend on Vercel + Backend on Render / Railway
-
-**Frontend (Vercel):**
-
-1. Push your repo to GitHub
-2. Go to [vercel.com/new](https://vercel.com/new) → Import `causal-flow`
-3. Set the configuration:
-   - **Framework Preset**: Vite
-   - **Root Directory**: `frontend`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-4. Add environment variable:
-   - `VITE_API_URL` = `https://your-backend-url.onrender.com/api`
-5. Click **Deploy**
-
-**Backend (Render):**
-
-1. Go to [render.com](https://render.com) → New Web Service
-2. Connect your repo, set **Root Directory** to `backend`
-3. **Build Command**: `pip install -r requirements.txt`
-4. **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-5. Done — copy the URL and set it as `VITE_API_URL` in Vercel
-
-### Option B: Docker Compose (Self-Hosted)
+### Docker Compose (Self-Hosted)
 
 ```bash
 docker compose up --build
