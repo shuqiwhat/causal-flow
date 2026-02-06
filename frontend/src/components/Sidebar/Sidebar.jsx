@@ -44,17 +44,11 @@ const Icons = {
             <polyline points="20,6 9,17 4,12" />
         </svg>
     ),
-    Settings: () => (
+    About: () => (
         <svg className="utility-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-        </svg>
-    ),
-    Export: () => (
-        <svg className="utility-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-            <polyline points="7,10 12,15 17,10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
         </svg>
     ),
     Wand: () => (
@@ -755,15 +749,16 @@ function Sidebar() {
                     </div>
                 </nav>
 
-                {/* Utility */}
+                {/* About */}
                 <div className="sidebar-utility">
-                    <div className="utility-item">
-                        <Icons.Export />
-                        <span>Export</span>
-                    </div>
-                    <div className="utility-item">
-                        <Icons.Settings />
-                        <span>Settings</span>
+                    <div className="utility-item about-section">
+                        <Icons.About />
+                        <div className="about-info">
+                            <span className="about-label">About</span>
+                            <span className="about-detail">shuqiwang</span>
+                            <a href="mailto:shuqiwhat@gmail.com" className="about-link">shuqiwhat@gmail.com</a>
+                            <a href="https://www.shuqihere.top" target="_blank" rel="noopener noreferrer" className="about-link">www.shuqihere.top</a>
+                        </div>
                     </div>
                 </div>
             </aside>
