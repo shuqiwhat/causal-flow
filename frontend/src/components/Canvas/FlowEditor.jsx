@@ -2,6 +2,7 @@
 import { useEffect, useCallback } from 'react';
 import {
     ReactFlow,
+    ReactFlowProvider,
     Background,
     Controls,
     MiniMap,
@@ -33,6 +34,8 @@ function FlowEditor() {
     const {
         nodes,
         edges,
+        setNodes,
+        setEdges,
         onNodesChange,
         onEdgesChange,
         onConnect,
@@ -149,43 +152,42 @@ function FlowEditor() {
                         Auto Layout
                     </button>
                 </Panel>
+                {/* Global Toasts */}
+                <Panel position="top-center">
+                    <div className="flex flex-col gap-2 items-center">
+                        {/* Mode Badge */}
+                        {modelTrained && !error && !successMessage && (
+                            <div className="status-badge status-badge--success">
+                                Run Mode - Click nodes to set evidence
+                            </div>
+                        )}
+
+                        {/* Error Toast */}
+                        {error && (
+                            <div className="status-badge status-badge--error">
+                                <span>{error}</span>
+                                <div className="toast-close" onClick={() => setError(null)}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M18 6L6 18M6 6l12 12" />
+                                    </svg>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Success Toast */}
+                        {successMessage && !error && (
+                            <div className="status-badge status-badge--success">
+                                <span>{successMessage}</span>
+                                <div className="toast-close" onClick={() => useFlowStore.getState().clearMessages()}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M18 6L6 18M6 6l12 12" />
+                                    </svg>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </Panel>
             </ReactFlow>
-
-            {/* Global Toasts */}
-            <Panel position="top-center">
-                <div className="flex flex-col gap-2 items-center">
-                    {/* Mode Badge */}
-                    {modelTrained && !error && !successMessage && (
-                        <div className="status-badge status-badge--success">
-                            Run Mode - Click nodes to set evidence
-                        </div>
-                    )}
-
-                    {/* Error Toast */}
-                    {error && (
-                        <div className="status-badge status-badge--error">
-                            <span>{error}</span>
-                            <div className="toast-close" onClick={() => setError(null)}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M18 6L6 18M6 6l12 12" />
-                                </svg>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Success Toast */}
-                    {successMessage && !error && (
-                        <div className="status-badge status-badge--success">
-                            <span>{successMessage}</span>
-                            <div className="toast-close" onClick={() => useFlowStore.getState().clearMessages()}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M18 6L6 18M6 6l12 12" />
-                                </svg>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </Panel>
 
             {/* Empty State */}
             {nodes.length === 0 && (
@@ -199,4 +201,13 @@ function FlowEditor() {
     );
 }
 
-export default FlowEditor;
+// 用 ReactFlowProvider 包裹，确保 useReactFlow hook 可用
+function FlowEditorWrapper() {
+    return (
+        <ReactFlowProvider>
+            <FlowEditor />
+        </ReactFlowProvider>
+    );
+}
+
+export default FlowEditorWrapper;
