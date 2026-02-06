@@ -5,11 +5,14 @@ import {
     Background,
     Controls,
     MiniMap,
+    Panel,
     ConnectionLineType,
+    useReactFlow,
 } from '@xyflow/react';
 import useFlowStore from '../../hooks/useFlowStore';
 import CustomNode from './CustomNode';
 import { infer } from '../../api/api';
+import { getLayoutedElements } from '../../utils/layout';
 
 const nodeTypes = {
     customNode: CustomNode,
@@ -40,6 +43,26 @@ function FlowEditor() {
         updateDistributions,
         setError,
     } = useFlowStore();
+
+    const { fitView } = useReactFlow();
+
+    const onLayout = useCallback(
+        (direction) => {
+            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+                nodes,
+                edges,
+                direction
+            );
+
+            setNodes([...layoutedNodes]);
+            setEdges([...layoutedEdges]);
+
+            window.requestAnimationFrame(() => {
+                fitView();
+            });
+        },
+        [nodes, edges, setNodes, setEdges, fitView]
+    );
 
     // 当 evidence 变化时触发推理
     useEffect(() => {
@@ -111,28 +134,58 @@ function FlowEditor() {
                     pannable
                     zoomable
                 />
+
+                <Panel position="top-right">
+                    <button
+                        className="layout-btn"
+                        onClick={() => onLayout('TB')}
+                        title="Auto Layout (Hierarchy)"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="3" y1="9" x2="21" y2="9"></line>
+                            <line x1="9" y1="21" x2="9" y2="9"></line>
+                        </svg>
+                        Auto Layout
+                    </button>
+                </Panel>
             </ReactFlow>
 
-            {/* Mode Badge */}
-            {modelTrained && (
-                <div className="status-badge status-badge--success">
-                    Run Mode - Click nodes to set evidence
-                </div>
-            )}
+            {/* Global Toasts */}
+            <Panel position="top-center">
+                <div className="flex flex-col gap-2 items-center">
+                    {/* Mode Badge */}
+                    {modelTrained && !error && !successMessage && (
+                        <div className="status-badge status-badge--success">
+                            Run Mode - Click nodes to set evidence
+                        </div>
+                    )}
 
-            {/* Error Message */}
-            {error && (
-                <div className="status-badge status-badge--error">
-                    {error}
-                </div>
-            )}
+                    {/* Error Toast */}
+                    {error && (
+                        <div className="status-badge status-badge--error">
+                            <span>{error}</span>
+                            <div className="toast-close" onClick={() => setError(null)}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M18 6L6 18M6 6l12 12" />
+                                </svg>
+                            </div>
+                        </div>
+                    )}
 
-            {/* Success Message */}
-            {successMessage && !error && !modelTrained && (
-                <div className="status-badge status-badge--success">
-                    {successMessage}
+                    {/* Success Toast */}
+                    {successMessage && !error && (
+                        <div className="status-badge status-badge--success">
+                            <span>{successMessage}</span>
+                            <div className="toast-close" onClick={() => useFlowStore.getState().clearMessages()}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M18 6L6 18M6 6l12 12" />
+                                </svg>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
+            </Panel>
 
             {/* Empty State */}
             {nodes.length === 0 && (

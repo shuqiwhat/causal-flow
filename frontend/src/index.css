@@ -397,8 +397,34 @@ body,
   background: var(--cf-border-subtle) !important;
 }
 
-.react-flow__controls-button:last-child {
-  border-bottom: none !important;
+/* Auto Layout Button */
+.layout-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--cf-bg-secondary);
+  border: 1px solid var(--cf-border);
+  border-radius: 6px;
+  color: var(--cf-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+}
+
+.layout-btn:hover {
+  background: var(--cf-border-subtle);
+  color: var(--cf-text-primary);
+}
+
+.layout-btn svg {
+  color: var(--cf-text-tertiary);
+}
+
+.layout-btn:hover svg {
+  color: var(--cf-text-secondary);
 }
 
 .react-flow__minimap {

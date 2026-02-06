@@ -18,9 +18,9 @@ Build, Visualize, and Reason with Causal Models directly in your browser.
 
 ## 📸 Snapshots
 
-|                Construction                 |                  Inference                   |
-| :-----------------------------------------: | :------------------------------------------: |
-| ![Graph](docs/images/hero_construction.png) | ![Inference](docs/images/hero_inference.png) |
+|                  Construction                  |                   Inference                   |
+| :--------------------------------------------: | :--------------------------------------------: |
+| ![1770410595902](image/README/1770410595902.png) | ![1770410568940](image/README/1770410568940.png) |
 
 ## 🛠️ Quick Start
 

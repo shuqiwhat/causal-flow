@@ -134,11 +134,25 @@ const useFlowStore = create((set, get) => ({
     // 设置加载状态
     setLoading: (isLoading) => set({ isLoading }),
 
-    // 设置错误
-    setError: (error) => set({ error, isLoading: false, successMessage: null }),
+    // 设置错误 (3秒后自动消失)
+    setError: (error) => {
+        set({ error, isLoading: false, successMessage: null });
+        if (error) {
+            setTimeout(() => {
+                set({ error: null });
+            }, 3000);
+        }
+    },
 
-    // 设置成功消息
-    setSuccess: (message) => set({ successMessage: message, error: null }),
+    // 设置成功消息 (3秒后自动消失)
+    setSuccess: (message) => {
+        set({ successMessage: message, error: null });
+        if (message) {
+            setTimeout(() => {
+                set({ successMessage: null });
+            }, 3000);
+        }
+    },
 
     // 添加手工节点 (不需要 CSV 数据)
     addManualNode: (name, states) => {

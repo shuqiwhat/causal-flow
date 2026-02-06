@@ -450,7 +450,6 @@ function Sidebar() {
                                         ))}
                                     </div>
                                 )}
-                                {error && <div className="upload-error">{error}</div>}
                             </>
                         )}
                     </div>
@@ -543,10 +542,10 @@ function Sidebar() {
                             </div>
                         )}
                     </div>
-                </nav>
+                </nav >
 
                 {/* Utility - Bottom */}
-                <div className="sidebar-utility">
+                < div className="sidebar-utility" >
                     <div className="utility-item">
                         <Icons.Export />
                         <span>Export</span>
@@ -555,13 +554,14 @@ function Sidebar() {
                         <Icons.Settings />
                         <span>Settings</span>
                     </div>
-                </div>
-            </aside>
+                </div >
+            </aside >
 
             {/* Add Node Modal */}
-            <AddNodeModal
+            < AddNodeModal
                 isOpen={showAddNode}
-                onClose={() => setShowAddNode(false)}
+                onClose={() => setShowAddNode(false)
+                }
                 onAdd={handleAddNode}
             />
         </>
