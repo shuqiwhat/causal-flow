@@ -10,7 +10,7 @@
 </h3>
 
 <p align="center">
-  <a href="https://bn-causal-flow.vercel.app">Live Demo</a> ·
+  <a href="https://causalflow.shuqihere.top/">Live Demo</a> ·
   <a href="https://www.shuqihere.top/archive/open-source/bn-causal-flow">Docs</a> ·
   <a href="#quick-start">Quick Start</a>
 </p>
@@ -27,7 +27,7 @@
 CausalFlow is an open-source visual workbench for Bayesian Networks. Drop a CSV or define nodes from scratch, draw causal relationships, and run exact inference — all through a drag-and-drop interface. No code, no installs, no MATLAB license.
 
 <p align="center">
-  <a href="https://bn-causal-flow.vercel.app"><strong>👉 Try the live demo</strong></a>
+  <a href="https://causalflow.shuqihere.top/"><strong>👉 Try the live demo</strong></a>
 </p>
 
 ## Features
@@ -70,6 +70,7 @@ git clone https://github.com/shuqiwhat/causal-flow.git && cd causal-flow
 ```
 
 **Backend:**
+
 ```bash
 cd backend
 python -m venv venv && source venv/bin/activate
@@ -78,6 +79,7 @@ uvicorn main:app --reload        # → http://localhost:8000
 ```
 
 **Frontend:**
+
 ```bash
 cd frontend
 npm install && npm run dev        # → http://localhost:5173
@@ -88,16 +90,17 @@ That's it. Open `http://localhost:5173`.
 ## Deploy
 
 **One-click Docker:**
+
 ```bash
 docker compose up -d --build
 ```
 
 **Vercel + Render (free tier):**
 
-| Component | Platform | Root Dir | Config |
-|-----------|----------|----------|--------|
-| Frontend | [Vercel](https://vercel.com) | `frontend` | Set `VITE_API_URL` env var |
-| Backend | [Render](https://render.com) | `backend` | Auto-detected as Python |
+| Component | Platform                  | Root Dir     | Config                       |
+| --------- | ------------------------- | ------------ | ---------------------------- |
+| Frontend  | [Vercel](https://vercel.com) | `frontend` | Set `VITE_API_URL` env var |
+| Backend   | [Render](https://render.com) | `backend`  | Auto-detected as Python      |
 
 ## Contributing
 
